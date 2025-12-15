@@ -45,8 +45,8 @@
         const MahjongLottery = () => {
             const [gameState, setGameState] = useState('home'); // home, drawing, win, lose, limit_reached
             const [drawCount, setDrawCount] = useState(0);
-            const MAX_DRAWS = 5;
-            const WIN_RATE = 0.2; // 20% 中獎率
+            const MAX_DRAWS = 3;
+            const WIN_RATE = 0.05; // 5% 中獎率
 
             // 初始化：讀取用戶已抽獎次數
             useEffect(() => {
@@ -158,7 +158,7 @@
                                     <div className="py-2 flex justify-center">
                                         <MahjongTile symbol="免" />
                                     </div>
-                                    <h2 className="text-2xl font-bold text-yellow-300 mt-2">免費包廂券</h2>
+                                    <h2 className="text-2xl font-bold text-yellow-300 mt-2">2小時續時券</h2>
                                 </div>
 
                                 {/* 抽獎按鈕與狀態 */}
@@ -189,7 +189,7 @@
                                     )}
                                 </div>
                                 
-                                <p className="text-xs text-green-300/40 mt-2">中獎率 20% • 祝您自摸一把罩</p>
+                                <p className="text-xs text-green-300/40 mt-2">中獎率 5% • 祝您自摸一把罩</p>
                             </div>
                         )}
 
@@ -218,7 +218,7 @@
                                             </div>
 
                                             <div className="text-sm font-bold border-b border-red-200 pb-2 mb-2">麻將社群大獎</div>
-                                            <div className="text-3xl font-black tracking-tighter">免費包廂券</div>
+                                            <div className="text-3xl font-black tracking-tighter">2小時續時券</div>
                                             <div className="text-xs mt-2 text-red-600 font-bold">No. {Date.now().toString().slice(-6)}</div>
                                         </div>
                                     </div>
@@ -292,4 +292,5 @@
         root.render(<MahjongLottery />);
     </script>
 </body>
+
 </html>
