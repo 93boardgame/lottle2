@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>闆娘抽獎池</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #8B0000; /* 深紅色背景 */
+            background-image: radial-gradient(#A52A2A 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .ticket-edge {
+            background-image: radial-gradient(circle, #8B0000 10px, transparent 11px);
+            background-size: 30px 30px;
+            background-position: -15px -15px;
+            background-repeat: repeat-y;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .btn-gold {
+            background: linear-gradient(to bottom, #FFD700, #DAA520);
+            box-shadow: 0 4px 0 #B8860B;
+            text-shadow: 0px 1px 2px rgba(255,255,255,0.5);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+
+        .btn-gold:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #B8860B;
+        }
+
+        /* 序號樣式 */
+        .serial-number {
+            font-family: 'Courier New', Courier, monospace;
+            letter-spacing: 1px;
+            background-color: #fff;
+            border: 2px dashed #ccc;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- 主容器 -->
+    <div id="app-container" class="glass-panel w-full max-w-md rounded-2xl overflow-hidden relative border-4 border-yellow-600 min-h-[550px] flex flex-col">
+        
+        <!-- 裝飾用麻將風格角落 -->
+        <div class="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-yellow-600 rounded-tl-lg pointer-events-none"></div>
+        <div class="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-yellow-600 rounded-tr-lg pointer-events-none"></div>
+        <div class="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-yellow-600 rounded-bl-lg pointer-events-none"></div>
+        <div class="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-yellow-600 rounded-br-lg pointer-events-none"></div>
+
+        <!-- 頁面 1: 首頁 -->
+        <div id="page-home" class="p-8 text-center flex flex-col items-center flex-grow justify-center">
+            <h1 class="text-3xl font-black text-red-800 mb-2 tracking-wide">🀄 闆娘抽獎池</h1>
+            <p class="text-yellow-700 font-bold mb-4">歡迎光臨</p>
+            
+            <div class="bg-yellow-50 border-2 border-yellow-200 p-4 rounded-lg my-4 w-full shadow-inner relative">
+                <div class="absolute left-0 top-0 bottom-0 w-4 ticket-edge"></div>
+                <div class="absolute right-0 top-0 bottom-0 w-4 ticket-edge" style="transform: rotate(180deg);"></div>
+                
+                <p class="text-gray-500 text-xs mb-1 tracking-widest">本次大獎</p>
+                <h2 class="text-3xl font-black text-red-600 mb-2">免費包廂券</h2>
+                <div class="flex justify-center items-center gap-2 mt-2">
+                    <span class="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">限量 3 張</span>
+                </div>
+            </div>
+
+            <p class="text-gray-700 font-medium mb-8">試試手氣 祝您中獎</p>
+
+            <button onclick="tryDraw()" class="btn-gold w-full text-red-900 font-black text-2xl py-4 rounded-xl mb-4 tracking-widest">
+                立即抽獎
+            </button>
+            
+            <p id="attempts-display" class="text-sm text-gray-500 font-bold">
+                今日剩餘次數: <span id="count-val" class="text-xl text-red-600">3</span>
+            </p>
+
+            <!-- 規則說明 -->
+            <div class="mt-8 text-left bg-gray-100 p-3 rounded-lg text-xs text-gray-500 w-full border border-gray-200">
+                <p class="font-bold mb-1 text-gray-700">注意事項：</p>
+                <p>① 中獎率為 3%</p>
+                <p>② 一個設備每日可抽 3 次</p>
+                <p>③ 過 00:00 自動重置次數</p>
+            </div>
+        </div>
+
+        <!-- 頁面 2: 中獎 -->
+        <div id="page-win" class="hidden p-6 text-center flex-col items-center justify-center flex-grow bg-yellow-50">
+            <div class="text-6xl mb-2 animate-bounce">🎉</div>
+            <h2 class="text-3xl font-black text-red-600 mb-1">恭喜中獎！</h2>
+            <p class="text-gray-500 text-sm mb-4">運氣太好了吧！</p>
+            
+            <!-- 獎品卡片 -->
+            <div class="bg-white p-6 rounded-xl shadow-xl w-full border-2 border-yellow-500 relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 bg-red-600 text-white text-xs font-bold px-8 py-1 rotate-45">WINNER</div>
+                
+                <h3 class="text-2xl font-black text-gray-800 mb-2">免費包廂券</h3>
+                <p class="text-xs text-gray-400 mb-4">Valid Voucher</p>
+
+                <!-- 防偽序號區塊 -->
+                <div class="serial-number p-2 rounded text-center mb-2">
+                    <p class="text-[10px] text-gray-400 mb-1 uppercase">Serial Code</p>
+                    <p id="win-serial" class="text-lg font-bold text-red-800 tracking-wider">Loading...</p>
+                    <p id="win-time" class="text-[10px] text-gray-400 mt-1"></p>
+                </div>
+            </div>
+
+            <div class="mt-6 space-y-2">
+                <p class="text-lg font-bold text-gray-800">請立即截圖傳給闆娘</p>
+                <p class="text-sm text-red-500 font-bold blink-text border border-red-200 bg-red-50 px-2 py-1 rounded inline-block">⚠ 名額有限 逾時不候</p>
+            </div>
+        </div>
+
+        <!-- 頁面 3: 沒中獎 -->
+        <div id="page-lose" class="hidden p-8 text-center flex-col items-center justify-center flex-grow">
+            <div class="text-6xl mb-4 grayscale opacity-40">🍃</div>
+            <h2 class="text-2xl font-bold text-gray-600 mb-2">銘謝惠顧</h2>
+            <div class="h-1 w-20 bg-gray-200 mx-auto mb-6 rounded"></div>
+            <p class="text-gray-500 mb-8 leading-relaxed">
+                差一點點就中了！<br>
+                運氣正在累積中...<br>
+                <span class="text-yellow-600 font-bold">再接再厲！</span>
+            </p>
+            
+            <button onclick="resetView()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-8 rounded-lg transition w-2/3 shadow-sm border-b-4 border-gray-300 active:border-b-0 active:translate-y-1">
+                返回首頁
+            </button>
+        </div>
+
+        <!-- 管理員文字按鈕 (右下角) -->
+        <div class="absolute bottom-2 right-2 z-10">
+            <span onclick="adminReset()" class="text-[10px] text-gray-400/50 hover:text-gray-500 cursor-pointer select-none transition-colors duration-300 font-mono">
+                管理員重置
+            </span>
+        </div>
+
+    </div>
+
+    <script>
+        // 設定
+        const CONFIG = {
+            winRate: 0.03, // 3%
+            maxDailyAttempts: 3,
+            maxTotalWinners: 3, 
+            storageKey: 'mahjong_lottery_v2_data'
+        };
+
+        // 狀態管理
+        let state = {
+            date: '',
+            attemptsUsed: 0,
+            totalWinners: 0 
+        };
+
+        // 初始化
+        function init() {
+            const now = new Date();
+            const todayStr = now.toLocaleDateString();
+            const stored = localStorage.getItem(CONFIG.storageKey);
+            
+            if (stored) {
+                state = JSON.parse(stored);
+                // 檢查是否跨日
+                if (state.date !== todayStr) {
+                    state.date = todayStr;
+                    state.attemptsUsed = 0; // 重置次數
+                    saveState();
+                }
+            } else {
+                state.date = todayStr;
+                state.attemptsUsed = 0;
+                state.totalWinners = 0;
+                saveState();
+            }
+            updateUI();
+        }
+
+        function saveState() {
+            localStorage.setItem(CONFIG.storageKey, JSON.stringify(state));
+        }
+
+        function updateUI() {
+            const remaining = CONFIG.maxDailyAttempts - state.attemptsUsed;
+            document.getElementById('count-val').innerText = Math.max(0, remaining);
+            
+            const btn = document.querySelector('.btn-gold');
+            if (remaining <= 0) {
+                btn.classList.add('opacity-50', 'cursor-not-allowed', 'grayscale');
+                btn.innerText = "今日次數已用盡";
+                btn.onclick = null; // 移除點擊事件
+            } else {
+                btn.classList.remove('opacity-50', 'cursor-not-allowed', 'grayscale');
+                btn.innerText = "立即抽獎";
+                btn.onclick = tryDraw; // 恢復點擊事件
+            }
+        }
+
+        function switchPage(pageId) {
+            ['page-home', 'page-win', 'page-lose'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+                document.getElementById(id).classList.remove('flex');
+            });
+            const page = document.getElementById(pageId);
+            page.classList.remove('hidden');
+            page.classList.add('flex');
+        }
+
+        function resetView() {
+            switchPage('page-home');
+            updateUI();
+        }
+
+        // 產生防偽序號
+        function generateSerial() {
+            const now = new Date();
+            // 格式: MMDD-HHmm-Random4
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hour = String(now.getHours()).padStart(2, '0');
+            const min = String(now.getMinutes()).padStart(2, '0');
+            const rand = Math.floor(1000 + Math.random() * 9000); // 4位隨機數
+            
+            return `MJ${month}${day}-${hour}${min}-${rand}`;
+        }
+
+        // 抽獎邏輯
+        function tryDraw() {
+            if (state.attemptsUsed >= CONFIG.maxDailyAttempts) return;
+
+            if (state.totalWinners >= CONFIG.maxTotalWinners) {
+                processResult(false);
+                return;
+            }
+
+            state.attemptsUsed++;
+            saveState();
+
+            const isWin = Math.random() < CONFIG.winRate;
+            processResult(isWin);
+        }
+
+        function processResult(isWin) {
+            const btn = document.querySelector('.btn-gold');
+            const originalText = btn.innerText;
+            btn.innerText = "🀄 摸牌中...";
+            btn.disabled = true;
+
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.disabled = false;
+
+                if (isWin) {
+                    state.totalWinners++;
+                    saveState();
+                    
+                    // 生成序號並顯示
+                    const serialCode = generateSerial();
+                    const timeStr = new Date().toLocaleString('zh-TW', { hour12: false });
+                    document.getElementById('win-serial').innerText = serialCode;
+                    document.getElementById('win-time').innerText = `產出時間: ${timeStr}`;
+
+                    switchPage('page-win');
+                    fireConfetti();
+                } else {
+                    switchPage('page-lose');
+                }
+                updateUI();
+            }, 800);
+        }
+
+        function fireConfetti() {
+            const duration = 3000;
+            const end = Date.now() + duration;
+
+            (function frame() {
+                confetti({
+                    particleCount: 5, angle: 60, spread: 55, origin: { x: 0 },
+                    colors: ['#FFD700', '#FF0000', '#ffffff']
+                });
+                confetti({
+                    particleCount: 5, angle: 120, spread: 55, origin: { x: 1 },
+                    colors: ['#FFD700', '#FF0000', '#ffffff']
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        }
+
+        // 管理員功能
+        function adminReset() {
+            // 直接跳出密碼框
+            const pwd = prompt("請輸入管理員密碼：");
+            if (pwd === "13491349") {
+                if(confirm("確定要重置數據嗎？\n(清除中獎總數與今日次數)")) {
+                    localStorage.removeItem(CONFIG.storageKey);
+                    alert("✅ 系統已重置完成");
+                    init();
+                    location.reload();
+                }
+            } else {
+                if(pwd !== null) alert("🚫 密碼錯誤");
+            }
+        }
+
+        init();
+    </script>
+
+    <style>
+        @keyframes blink {
+            0%, 100% { opacity: 1; border-color: transparent; }
+            50% { opacity: 0.8; border-color: rgba(239, 68, 68, 0.5); }
+        }
+        .blink-text {
+            animation: blink 2s infinite;
+        }
+    </style>
+</body>
+</html>
